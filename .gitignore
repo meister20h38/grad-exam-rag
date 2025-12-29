@@ -20,3 +20,7 @@ qdrant_data/
 
 # Marker output
 !data/.gitkeep
+
+# Backup files
+*~
+*.swp
