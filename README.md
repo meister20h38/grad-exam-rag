@@ -26,3 +26,9 @@ pip install -r requirements.txt
 
 # Run OCR Test (Safe Mode)
 python -m app.services.ocr
+
+## Usage (API)
+
+1. Start the API Server:
+```bash
+uvicorn app.main:app --reload
