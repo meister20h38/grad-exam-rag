@@ -9,27 +9,30 @@ class OCRService:
     def convert_pdf_to_markdown(self, pdf_path: str) -> str:
         """
         指定されたPDFをMarkdownに変換し、出力されたmdファイルのパスを返す。
-        RDP落ち防止のため、CPUリソース制限モードで実行する。
+        
+        Note:
+            VRAM枯渇およびCPU負荷によるRDP切断を防ぐため、
+            意図的にCPUリソース制限モード（Resource Safe Mode）で実行する。
         """
         pdf_path = Path(pdf_path).resolve()
         if not pdf_path.exists():
             raise FileNotFoundError(f"PDFが見つかりません: {pdf_path}")
 
-        # 出力ディレクトリの準備
         os.makedirs(self.output_base_dir, exist_ok=True)
 
         # 環境変数の設定 (Resource Safe Mode)
+        # マシンリソースを占有しすぎないよう環境変数を制御
         env = os.environ.copy()
         env["CUDA_VISIBLE_DEVICES"] = ""     # GPU無効化
         env["TORCH_DEVICE"] = "cpu"          # CPU強制
-        # スレッド制限 (RDP維持のため)
+        
+        # マルチスレッドによるOSフリーズ防止(RDP維持のため)
         threads = "2"
         env["OMP_NUM_THREADS"] = threads
         env["MKL_NUM_THREADS"] = threads
         env["TORCH_NUM_THREADS"] = threads
 
-        # コマンド構築
-        # output_dirを指定すると、その中にサブフォルダが作られる仕様に対応
+        # Markerコマンド構築
         command = [
             "marker_single",
             str(pdf_path),
@@ -47,11 +50,11 @@ class OCRService:
                 encoding='utf-8', 
                 errors='ignore',
                 env=env,
-                timeout=600  # 10分タイムアウト
+                timeout=600  # ハングアップ防止のタイムアウト
             )
             
-            # 生成されたファイルのパスを特定して返す
-            # markerは output_dir/pdf_filename/pdf_filename.md を作る
+            # 生成物のパス解決
+            # markerは output_dir/pdf_filename/pdf_filename.md に出力する仕様
             expected_md = self.output_base_dir / pdf_path.stem / f"{pdf_path.stem}.md"
             if expected_md.exists():
                 return str(expected_md)
@@ -63,12 +66,35 @@ class OCRService:
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"OCR変換失敗: {e.stderr}")
 
-# テスト実行用 ( python -m app.services.ocr で動く)
 if __name__ == "__main__":
-    service = OCRService(output_base_dir="./output_test")
-    # dataフォルダがある前提
+    import argparse
+    import sys
+
+    # 引数設定
+    parser = argparse.ArgumentParser(
+        description="PDFをMarkdownに変換するツール (Resource Safe Mode)"
+    )
+    parser.add_argument("pdf_path", help="変換対象のPDFファイルのパス")
+    parser.add_argument("--output", default="./output_data", help="出力先ディレクトリ")
+    
+    args = parser.parse_args()
+
+    # パスチェック
+    target_pdf = Path(args.pdf_path)
+    if not target_pdf.exists():
+        print(f"Error: File not found -> {target_pdf}")
+        sys.exit(1)
+
+    # 実行
     try:
-        result = service.convert_pdf_to_markdown("./data/sample_exam.pdf")
-        print(f"Success! Output: {result}")
+        service = OCRService(output_base_dir=args.output)
+        result_path = service.convert_pdf_to_markdown(str(target_pdf))
+        
+        print("-" * 30)
+        print("Conversion Successful!")
+        print(f"Output MD: {result_path}")
+        print("-" * 30)
+
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Fatal Error: {e}")
+        sys.exit(1)
