@@ -4,7 +4,8 @@
 
 ## 特徴
 
-* **数式対応OCR:** * 一般的なOCRでは崩れてしまう数学・物理の数式（LaTeX形式）を、`marker-pdf` を用いて高精度にMarkdown化。
+* **数式対応OCR:** 
+  * 一般的なOCRでは崩れてしまう数学・物理の数式（LaTeX形式）を、`marker-pdf` を用いて高精度にMarkdown化。
 * **ローカルLLM推論:**
   * 機密性の高い過去問データを外部に出さず、ローカルGPU環境（RTX 3060）で安全に処理。
 * **リソース最適化:**
@@ -26,9 +27,11 @@ pip install -r requirements.txt
 
 # Run OCR Test (Safe Mode)
 python -m app.services.ocr
+```
 
 ## Usage (API)
 
 1. Start the API Server:
 ```bash
 uvicorn app.main:app --reload
+```
