@@ -18,9 +18,9 @@
 ```mermaid
 graph LR
     subgraph Data Pipeline
-        PDF[過去問PDF] -->|OCR/Marker| MD[Markdown (数式保持)]
+        PDF[過去問PDF] -->|OCR/Marker| MD["Markdown (数式保持)"]
         MD -->|Chunking| Nodes
-        Nodes -->|Embedding (CPU)| VectorDB[(Qdrant)]
+        Nodes -->|"Embedding (CPU)"| VectorDB[(Qdrant)]
     end
 
     subgraph Application
@@ -28,7 +28,7 @@ graph LR
         UI -->|API Req| API[FastAPI Backend]
         API -->|Retrieve| VectorDB
         VectorDB -->|Context| API
-        API -->|Generate (GPU)| LLM[Ollama / Qwen 2.5]
+        API -->|"Generate (GPU)"| LLM["Ollama / Qwen 2.5"]
     end
 ```
 
