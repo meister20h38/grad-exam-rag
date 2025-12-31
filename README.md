@@ -1,37 +1,52 @@
-# Grad-Exam-Hack (WIP)
+# Grad-Exam-RAG: ローカル完結型 院試対策AIアシスタント
 
-大学院入試（情報系）の過去問対策を効率化するための、ローカル完結型RAG（Retrieval-Augmented Generation）システム。
+大学院入試（数学・情報系）の過去問PDFを学習し、数式を含む高度な質問に回答するRAG（Retrieval-Augmented Generation）アプリケーション。
+外部API（OpenAI等）を使用せず、**RTX 3060 (12GB)** 搭載のローカルPC上で、OCRから推論まで全てのパイプラインを完結させています。
 
-## 特徴
+![Python](https://img.shields.io/badge/Python-3.10-blue)
+![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688)
+![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-FF4B4B)
+![Ollama](https://img.shields.io/badge/LLM-Ollama-white)
+![Qdrant](https://img.shields.io/badge/VectorDB-Qdrant-red)
 
-* **数式対応OCR:** 
-  * 一般的なOCRでは崩れてしまう数学・物理の数式（LaTeX形式）を、`marker-pdf` を用いて高精度にMarkdown化。
-* **ローカルLLM推論:**
-  * 機密性の高い過去問データを外部に出さず、ローカルGPU環境（RTX 3060）で安全に処理。
-* **リソース最適化:**
-  * VRAM 12GBの制約下で安定動作させるため、OCR処理と推論処理のリソース管理（CPU/GPUオフロード）を厳密に制御。
+## 📸 Demo
 
-## 技術スタック
+*(ここに後でStreamlitのチャット画面のスクリーンショットを貼ると完璧です)*
 
-* **Language:** Python 3.10+
-* **OCR:** Marker (with PyTorch)
-* **LLM:** Ollama (Qwen 2.5)
-* **Vector DB:** Qdrant
-* **Backend:** FastAPI (Planned)
+## 🏗 Architecture
 
-## Setup
+```mermaid
+graph LR
+    subgraph Data Pipeline
+        PDF[過去問PDF] -->|OCR/Marker| MD[Markdown (数式保持)]
+        MD -->|Chunking| Nodes
+        Nodes -->|Embedding (CPU)| VectorDB[(Qdrant)]
+    end
 
-```bash
+    subgraph Application
+        User -->|Chat| UI[Streamlit Frontend]
+        UI -->|API Req| API[FastAPI Backend]
+        API -->|Retrieve| VectorDB
+        VectorDB -->|Context| API
+        API -->|Generate (GPU)| LLM[Ollama / Qwen 2.5]
+    end
+```
+
+# Clone repository
+git clone [https://github.com/your-name/grad-exam-rag.git](https://github.com/your-name/grad-exam-rag.git)
+cd grad-exam-rag
+
 # Install dependencies
 pip install -r requirements.txt
 
-# Run OCR Test (Safe Mode)
-python -m app.services.ocr
-```
+# Start Vector DB
+docker-compose up -d
 
-## Usage (API)
+# 指定したPDFをOCRにかけてDBに登録
+python -m app.services.import_pdf ./data/sample_exam.pdf
 
-1. Start the API Server:
-```bash
+# Start Backend API
 uvicorn app.main:app --reload
-```
+
+# Start Frontend UI (in a new terminal)
+streamlit run frontend.py
