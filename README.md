@@ -11,7 +11,7 @@
 
 ## 📸 Demo
 
-*(ここに後でStreamlitのチャット画面のスクリーンショットを貼ると完璧です)*
+
 
 ## 🏗 Architecture
 
