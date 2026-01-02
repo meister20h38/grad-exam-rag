@@ -32,6 +32,16 @@ graph LR
     end
 ```
 
+## 🚀 Key Features
+* **数式特化OCR**: 一般的なOCRでは崩れやすい数学・物理の数式を marker-pdf を用いてMarkdown(LaTeX)形式で高精度に抽出。
+
+* **完全ローカル運用**: 機密性の高いデータや個人的なドキュメントを外部に送信することなく、セキュアにRAGを構築可能。
+
+* **リソース最適化**: VRAM 12GBのコンシューマ向けGPUで動作させるため、推論と検索のメモリ管理を厳密に設計。
+
+
+* **インタラクティブなUI:** Python製フレームワーク `Streamlit` を採用し、チャット履歴の保持や、回答の参照元ドキュメント（Source）の確認が可能なUIを実装。
+
 # Clone repository
 git clone [https://github.com/your-name/grad-exam-rag.git](https://github.com/your-name/grad-exam-rag.git)
 cd grad-exam-rag
