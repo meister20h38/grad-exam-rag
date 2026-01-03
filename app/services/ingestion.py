@@ -1,3 +1,5 @@
+# app/services/ingestion.py
+
 import os
 import argparse
 from pathlib import Path
@@ -24,7 +26,8 @@ class IngestionService:
         Settings.llm = None
 
         self.client = qdrant_client.QdrantClient(
-            url="http://localhost:6333"
+            url="http://localhost:6333",
+            timeout=300.0
         )
 
     def ingest_markdown_file(self, md_path: str, collection_name: str = "grad_exam", extra_metadata: dict = None):
@@ -62,7 +65,8 @@ class IngestionService:
 
         vector_store = QdrantVectorStore(
             client=self.client,
-            collection_name=collection_name
+            collection_name=collection_name,
+            batch_size=32
         )
         storage_context = StorageContext.from_defaults(vector_store=vector_store)
 

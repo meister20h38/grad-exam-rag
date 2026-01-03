@@ -1,45 +1,58 @@
+# app/services/ocr.py
+
 import os
 import subprocess
 from pathlib import Path
 
 class OCRService:
-    def __init__(self, output_base_dir: str = "./output_data"):
-        self.output_base_dir = Path(output_base_dir).resolve()
+    def __init__(self, output_root: str = "./output_data"):
+        self.output_root = Path(output_root)
+        self.output_root.mkdir(parents=True, exist_ok=True)
         
-    def convert_pdf_to_markdown(self, pdf_path: str) -> str:
+    def convert_pdf_to_markdown(self, pdf_path: str, unique_subfolder: str = None) -> str:
         """
         指定されたPDFをMarkdownに変換し、出力されたmdファイルのパスを返す。
-        
-        Note:
-            VRAM枯渇およびCPU負荷によるRDP切断を防ぐため、
-            意図的にCPUリソース制限モード（Resource Safe Mode）で実行する。
         """
-        pdf_path = Path(pdf_path).resolve()
-        if not pdf_path.exists():
+        input_path = Path(pdf_path)
+        if not input_path.exists():
             raise FileNotFoundError(f"PDFが見つかりません: {pdf_path}")
 
-        os.makedirs(self.output_base_dir, exist_ok=True)
+        # 出力先ディレクトリの決定
+        if unique_subfolder:
+            output_dir = self.output_root / unique_subfolder
+        else:
+            output_dir = self.output_root
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        # 環境変数の設定 (VRAM/CPU負荷対策)
+        env = os.environ.copy()
 
         # 環境変数の設定 (Resource Safe Mode)
         # マシンリソースを占有しすぎないよう環境変数を制御
         env = os.environ.copy()
-        env["CUDA_VISIBLE_DEVICES"] = ""     # GPU無効化
-        env["TORCH_DEVICE"] = "cpu"          # CPU強制
+
+        # PyTorchのメモリ断片化を防ぐ（VRAM不足エラー対策）
+        env["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
         
         # マルチスレッドによるOSフリーズ防止(RDP維持のため)
-        threads = "2"
+        threads = "4"
         env["OMP_NUM_THREADS"] = threads
         env["MKL_NUM_THREADS"] = threads
         env["TORCH_NUM_THREADS"] = threads
 
+        # GPU設定のチューニング
+        batch_multiplier = "1"
+
         # Markerコマンド構築
         command = [
             "marker_single",
-            str(pdf_path),
-            "--output_dir", str(self.output_base_dir)
+            str(input_path),
+            "--output_dir", str(output_dir)
         ]
 
-        print(f"Starting OCR for {pdf_path.name} (Safe Mode)...")
+        print(f"Starting OCR for {input_path.name} (GPU Mode: ON, Batch: {batch_multiplier})...")
+        print(f"Output Directory: {output_dir}")
         
         try:
             subprocess.run(
@@ -50,16 +63,17 @@ class OCRService:
                 encoding='utf-8', 
                 errors='ignore',
                 env=env,
-                timeout=1800  # ハングアップ防止のタイムアウト
+                timeout=None  # ハングアップ防止のタイムアウト
             )
-            
-            # 生成物のパス解決
-            # markerは output_dir/pdf_filename/pdf_filename.md に出力する仕様
-            expected_md = self.output_base_dir / pdf_path.stem / f"{pdf_path.stem}.md"
-            if expected_md.exists():
-                return str(expected_md)
-            else:
-                raise FileNotFoundError("変換は完了しましたが、ファイルが見当たりません。")
+
+            # 生成されたMarkdownファイルのパスを探す
+            # 構造: output_dir / {pdf_stem} / {pdf_stem}.md
+            target_md = output_dir / input_path.stem / f"{input_path.stem}.md"
+
+            if not target_md.exists():
+                raise FileNotFoundError(f"Output markdown not found at {target_md}")
+
+            return str(target_md)
 
         except subprocess.TimeoutExpired:
             raise RuntimeError("OCR処理がタイムアウトしました。")
@@ -87,7 +101,7 @@ if __name__ == "__main__":
 
     # 実行
     try:
-        service = OCRService(output_base_dir=args.output)
+        service = OCRService(output_root=args.output)
         result_path = service.convert_pdf_to_markdown(str(target_pdf))
         
         print("-" * 30)

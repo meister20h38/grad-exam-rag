@@ -40,10 +40,14 @@ def import_pipeline(pdf_path_str: str):
         print("警告: フォルダ構成が data/{uni}/{year}/.. ではありません。メタデータは空になります。")
         metadata = {}
 
+    unique_id = "unknown"
+    if metadata:
+        unique_id = f"{metadata.get('university', 'univ')}_{metadata.get('year', 'year')}"
+
     print(f"=== 1. OCR開始: {pdf_path.name} ===")
     ocr_service = OCRService()
     try:
-        md_file_path = ocr_service.convert_pdf_to_markdown(str(pdf_path))
+        md_file_path = ocr_service.convert_pdf_to_markdown(str(pdf_path), unique_subfolder=unique_id)
         print(f"OCR完了: {md_file_path}")
     except Exception as e:
         print(f"OCR失敗: {e}")
