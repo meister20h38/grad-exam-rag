@@ -1,4 +1,5 @@
 import os
+import argparse
 from pathlib import Path
 import qdrant_client
 from llama_index.core import Document, VectorStoreIndex, StorageContext, Settings
@@ -26,10 +27,10 @@ class IngestionService:
             url="http://localhost:6333"
         )
 
-    def ingest_markdown_file(self, md_path: str, collection_name: str = "grad_exam"):
-		"""
+    def ingest_markdown_file(self, md_path: str, collection_name: str = "grad_exam", extra_metadata: dict = None):
+        """
         指定されたMarkdownファイルを読み込み、チャンク分割してインデックスを作成する。
-        
+
         Args:
             md_path (str): Markdownファイルのパス
             collection_name (str): Qdrantのコレクション名
@@ -37,17 +38,23 @@ class IngestionService:
         file_path = Path(md_path)
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {md_path}")
-
+    
         print(f"Reading file: {file_path.name}")
         with open(file_path, "r", encoding="utf-8") as f:
             text = f.read()
 
+        # メタデータの作成
+        metadata = {"file_name": file_path.name}
+        if extra_metadata:
+            metadata.update(extra_metadata) # 渡されたメタデータを結合
+
+        # Documentにメタデータをセット
         doc = Document(
             text=text,
-            metadata={"file_name": file_path.name}
+            metadata=metadata
         )
 
-		# 【重要】単純な文字数分割ではなく、Markdownの見出し構造に基づいて分割する
+	    # 【重要】単純な文字数分割ではなく、Markdownの見出し構造に基づいて分割する
         # これにより、数式や問題文のコンテキスト分断を防ぐ
         parser = MarkdownNodeParser()
         nodes = parser.get_nodes_from_documents([doc])

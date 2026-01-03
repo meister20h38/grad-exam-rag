@@ -13,6 +13,11 @@ venv/
 data/*
 output_test/*
 qdrant_data/
+output_data/
+experiments/
+
+# Qdrant database file
+qdrant_storage/
 
 # IDE
 .vscode/
