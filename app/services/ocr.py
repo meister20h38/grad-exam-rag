@@ -50,7 +50,7 @@ class OCRService:
                 encoding='utf-8', 
                 errors='ignore',
                 env=env,
-                timeout=600  # ハングアップ防止のタイムアウト
+                timeout=1800  # ハングアップ防止のタイムアウト
             )
             
             # 生成物のパス解決
