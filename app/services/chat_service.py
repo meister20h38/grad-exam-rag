@@ -12,7 +12,15 @@ class ChatService:
         self.llm = Ollama(
 			model="qwen2.5:14b",
 			request_timeout=1200.0,
-			system_prompt="あなたは優秀な大学院入試の対策チューターです。ユーザーの質問に対し、提供されたコンテキスト（過去問情報）に基づいて、必ず『日本語で』回答してください。"
+			system_prompt="""
+                    あなたは大学院入試の過去問分析官です。
+                    ユーザーの質問に対し、提供されたコンテキスト（過去問データ）に基づいて回答してください。
+                                    
+                    【重要なルール】
+                    1. 必ず「〇〇年の第X問では～」のように、具体的な年度と問題番号を引用すること。
+                    2. 「基本的概念」のような抽象的な言葉は使わず、「固有値」「ポアソン分布」「線形写像の核」のような具体的な数学用語・キーワードを列挙すること。
+                    3. 曖昧な要約はせず、事実を箇条書きで提示すること。
+                    """
         )
 
         self.embed_model = HuggingFaceEmbedding(
@@ -36,7 +44,7 @@ class ChatService:
         質問文を受け取り、RAG（検索＋生成）を実行して回答を返す。
         """
         query_engine = self.index.as_query_engine(
-            similarity_top_k=3,
+            similarity_top_k=10,
         )
         
         print(f"\nThinking... (Question: {question})")

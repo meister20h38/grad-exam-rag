@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from app.services.ocr import OCRService
 from app.services.ingestion import IngestionService
+from app.services.cleaner import TextCleaner
 
 def import_pipeline(pdf_path_str: str):
     pdf_path = Path(pdf_path_str).resolve()
@@ -52,6 +53,14 @@ def import_pipeline(pdf_path_str: str):
     except Exception as e:
         print(f"OCR失敗: {e}")
         return
+
+    print(f"\n=== 1.5. テキスト整形 (LLM Cleaner) ===")
+    cleaner = TextCleaner()
+    try:
+        # ここでMarkdownを上書き修正する
+        cleaner.clean_markdown_file(md_file_path)
+    except Exception as e:
+        print(f"整形処理でエラーが発生しましたが、続行します: {e}")
 
     print(f"\n=== 2. ベクトルDB格納開始 (メタデータ付き) ===")
     ingestion_service = IngestionService()

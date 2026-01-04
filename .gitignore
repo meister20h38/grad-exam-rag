@@ -29,3 +29,5 @@ qdrant_storage/
 # Backup files
 *~
 *.swp
+
+*.bak
