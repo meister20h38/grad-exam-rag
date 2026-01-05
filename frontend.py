@@ -68,7 +68,7 @@ if prompt := st.chat_input("質問を入力してください（例：線形代�
                                 text = src.get('text_preview', 'No content')
                                 
                                 st.markdown(f"**{i}. {file_name}** (Score: {score:.3f})")
-                                st.caption(f"{text}...")
+                                st.text(text)
                                 # 区切り線（最後以外）
                                 if i < len(sources):
                                     st.markdown("---")

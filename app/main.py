@@ -22,8 +22,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# グローバル変数としてサービスを保持
-chat_service = None
+# サービスを初期化
+chat_service = ChatService()
 
 @app.on_event("startup")
 async def startup_event():
@@ -35,10 +35,6 @@ async def startup_event():
 # リクエスト・レスポンスの定義
 class QuestionRequest(BaseModel):
     text: str
-
-class AnswerResponse(BaseModel):
-    question: str
-    answer: str
 
 @app.post("/api/chat", response_model=AnswerResponse)
 def chat_endpoint(request: QuestionRequest):
@@ -60,10 +56,19 @@ def chat_endpoint(request: QuestionRequest):
         source_list = []
         if hasattr(answer_result, "source_nodes"):
             for node in answer_result.source_nodes:
+                # メタデータ取得
+                fname = node.metadata.get("file_name", "Unknown") if node.metadata else "Unknown"
+
+                # スコア取得（Noneの場合は0.0）
+                scr = node.score if node.score is not None else 0.0
+
+                # テキストプレビュー
+                txt = node.get_content()[:100].replace("\n", " ")
+
                 source_list.append(SourceInfo(
-                    file_name=node.metadata.get("file_name", "Unknown"),
-                    score=node.score if node.score else 0.0,
-                    text_preview=node.text[:100]
+                    file_name=fname,
+                    score=scr,
+                    text_preview=txt
                 ))
 
         return AnswerResponse(
