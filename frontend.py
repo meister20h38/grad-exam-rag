@@ -48,7 +48,7 @@ if prompt := st.chat_input("質問を入力してください（例：線形代�
                 response = requests.post(
                     API_URL,
                     json={"text": prompt},
-                    timeout=60  # タイムアウト設定（秒）
+                    timeout=300  # タイムアウト設定（秒）
                 )
                 
                 if response.status_code == 200:

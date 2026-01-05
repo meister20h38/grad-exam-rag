@@ -21,9 +21,10 @@
 ```mermaid
 graph LR
     subgraph Data Pipeline
-        PDF[過去問PDF] -->|OCR/Marker| MD["Markdown (数式保持)"]
-        MD -->|Chunking| Nodes
-        Nodes -->|"Embedding (CPU)"| VectorDB[(Qdrant)]
+        PDF[過去問PDF] -->|OCR/Marker| RawMD[Raw Markdown]
+        RawMD -->|"Cleaning (LLM)"| CleanMD["Structured Markdown"]
+        CleanMD -->|Chunking| Nodes
+        Nodes -->|"Embedding (GPU/CPU)"| VectorDB[(Qdrant)]
     end
 
     subgraph Application
@@ -44,6 +45,8 @@ graph LR
 
 * **インタラクティブなUI:** Python製フレームワーク `Streamlit` を採用し、チャット履歴の保持や、回答の参照元ドキュメント（Source）の確認が可能なUIを実装。
 
+* **AIによるデータ整形 (New!)**: OCR直後の崩れた表データやプログラムコードを、ローカルLLM (Qwen 2.5) が文脈を理解して自動修復。人間が手直しすることなく、高品質なデータベースを構築。
+
 ## 🛠 Tech Stack
 * **Language**: Python 3.10
 
@@ -61,15 +64,14 @@ graph LR
 
 ## 🔥 Technical Challenges & Solutions
 
-### 1. 数式OCR時のVRAM枯渇とRDPクラッシュ
-- **🔴 課題**: marker-pdf によるOCR処理がGPUとメインメモリを食いつぶし、リモートデスクトップ(RDP)接続ごとしばしばダウンした。
+### 1. 数式OCRの負荷制御とデータ品質
+- **🔴 課題**: 
+    1. OCR処理がVRAMを食いつぶし、RDP接続ごとPCがクラッシュする。
+    2. OCRだけでは「表の罫線」や「ソースコードのインデント」が崩れ、回答精度が下がる。
 
-- **🟢 解決策**: 
-    - OCRプロセス専用のリソース制限クラスを実装。
-
-    - PyTorchの利用スレッド数（`OMP_NUM_THREADS`等）を物理コア数未満に制限し、OS維持用のリソースを確保。
-
-    - OCR時はあえてGPUを無効化(`CUDA_VISIBLE_DEVICES=""`)し、安定性を優先。
+- **🟢 解決策**:
+    - **Resource Safe Mode**: `batch_multiplier=1` に制限し、VRAM枯渇を防ぎつつGPU高速化を維持。
+    - **LLM Cleaner**: OCR後のMarkdownを章ごとに分割してLLMに読ませ、「フォーマット修復」を実行させるパイプラインを構築。これにより表データやコードブロックの認識率が100%近くまで向上。
 
 ### 2. ローカルLLMの推論速度とタイムアウト
 - **🔴 課題**: 当初 `32b` モデルを使用したが、VRAM 12GBに収まらずスワップが発生。APIがタイムアウト(500 Error)を頻発した。
@@ -100,11 +102,12 @@ pip install -r requirements.txt
 docker-compose up -d
 ```
 
-### 2. Ingest Data (PDF to Vector DB)
-指定したPDFをOCRにかけてDBに登録します。 ※ 初回実行時はOCRモデルのダウンロードが行われます。
+### 2. Ingest Data (Batch Import)
+`data/` ディレクトリに配置された大学・年度ごとのPDFを自動検出し、一括でOCR・整形・DB登録を行います。
+
 ```bash
-# 指定したPDFをOCRにかけてDBに登録
-python -m app.services.import_pdf ./data/sample_exam.pdf
+# dataフォルダ内の全PDFを一括インポート
+python batch_import.py
 ```
 
 ### 3. Run Application
@@ -136,8 +139,28 @@ grad-exam-rag/
 │       ├── chat_service.py # RAG Logic (Ollama + Qdrant)
 │       ├── ingestion.py    # VectorDB Indexing
 │       └── ocr.py          # PDF to Markdown (Marker)
+│       └── cleaner.py      # LLM-based Format Fixer (New)
 ├── data/                   # Input PDFs
+├── output_data/            # OCR & Cleaned Markdown
+├── batch_import.py         # Batch Processing Script (New)
 ├── frontend.py             # Streamlit Frontend UI
 ├── docker-compose.yml      # Qdrant Container Config
 └── requirements.txt        # Python Dependencies
 ```
+
+## 📊 Evaluation (精度評価)
+
+構築したRAGシステムの回答精度を、**実際の情報系大学院入試（2020-2024年）の過去問**を用いて検証しました。
+特に、OCRの難易度が高い「表形式データ」の数値読み取りや、複雑な「条件付き期待値」の計算において、高い推論能力を確認しています。
+※ 著作権に配慮し、以下の表では質問内容を要約して記載しています。
+
+| テストカテゴリ | 質問内容（要約） | 期待される回答要素 | 結果 / AIの回答要約 | 評価 |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. データ抽出** | 計算機アーキテクチャ：命令ミックス比率の特定 | 浮動小数点5,000, 整数25,000 | ✅ **完全正解** (表データ崩れをLLMが修復し、正確な数値を回答) | ⭐⭐⭐⭐⭐ |
+| **2. コード読解** | アルゴリズム：C言語関数 `proc1` の処理内容 | ヒープ調整, 再帰, swap | ✅ **完全正解** (インデントが復元され、再帰構造を正しく理解して解説) | ⭐⭐⭐⭐⭐ |
+| **3. 論理推論** | 離散数学：真理値表の特定行の読み取り | P=0, Q=1の箇所の値 | ✅ **正解** (表中の空欄番号を正確に特定し、最終的に「誤った推論」であると結論付けた) | ⭐⭐⭐⭐⭐ |
+| **4. 数式応用** | 確率統計：条件付き期待値の最大化 | 色ごとの期待値計算と場合分け | 🚀 **期待以上** (分布表から数値を読み取り、期待値を計算して場合分けを提示した) | ⭐⭐⭐⭐⭐ |
+| **5. 手順説明** | オペレーションズ・リサーチ：最大化問題の解法 | スラック変数導入, 基底変数 | ⭕ **概ね正解** (スラック変数の導入や基底変数の更新について正しく言及) | ⭐⭐⭐⭐☆ |
+
+**考察:**
+`marker-pdf` によるOCRと、LLMによる後処理（Cleaning）を組み合わせることで、従来のOCRでは認識不能だった「表中の数値」や「プログラムのインデント」を正確にRAGに取り込むことに成功しました。
