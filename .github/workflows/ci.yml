@@ -1,0 +1,51 @@
+# .github/workflows/ci.yml
+name: CI Pipeline
+
+# mainブランチへのプッシュとプルリクエストで発火
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. リポジトリをチェックアウト
+    - uses: actions/checkout@v3
+
+    # 2. Pythonのセットアップ
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    # 3. 依存関係のキャッシュ（高速化のため）
+    - name: Cache pip
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    # 4. ライブラリのインストール
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        # テスト用ライブラリも明示的にインストール
+        pip install pytest httpx ruff
+
+    # 5. コードの品質チェック (Lint)
+    - name: Lint with Ruff
+      run: |
+        # エラーがあれば停止する設定
+        ruff check .
+
+    # 6. テストの実行 (Mockを使用するのでGPU不要)
+    - name: Run Tests
+      run: |
+        pytest tests/
