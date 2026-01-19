@@ -48,4 +48,4 @@ jobs:
     # 6. テストの実行 (Mockを使用するのでGPU不要)
     - name: Run Tests
       run: |
-        pytest tests/
+        python -m pytest tests/
