@@ -120,7 +120,7 @@ graph LR
 リポジトリをクローンし、依存関係をインストールします。
 ```bash
 # Clone repository
-git clone [https://github.com/your-name/grad-exam-rag.git](https://github.com/your-name/grad-exam-rag.git)
+git clone [https://github.com/meister20h38/grad-exam-rag.git](https://github.com/meister20h38/grad-exam-rag.git)
 cd grad-exam-rag
 
 # Install dependencies
