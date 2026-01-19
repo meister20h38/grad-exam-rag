@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from app.services.chat_service import ChatService
-from typing import List, Optional
+from typing import List
 
 # ソース情報の定義
 class SourceInfo(BaseModel):

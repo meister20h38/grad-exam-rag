@@ -1,5 +1,4 @@
 # batch_import.py
-import os
 from pathlib import Path
 from app.services.import_pdf import import_pipeline
 

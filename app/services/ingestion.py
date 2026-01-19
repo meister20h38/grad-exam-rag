@@ -1,6 +1,5 @@
 # app/services/ingestion.py
 
-import os
 import argparse
 from pathlib import Path
 import qdrant_client

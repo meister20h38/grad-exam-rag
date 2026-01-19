@@ -52,7 +52,6 @@ class ChatService:
         return response
 
 if __name__ == "__main__":
-    import sys
     
     print("Initializing Chat Service... (This may take time due to model loading)")
     try:
