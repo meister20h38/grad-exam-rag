@@ -22,8 +22,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# サービスを初期化
-chat_service = ChatService()
+try:
+	# サービスを初期化
+	chat_service = ChatService()
+except Exxeption as e:
+	# CI環境やDBがない場合は、 None にして起動
+	print(f"Warning: Failed to initialize ChatService: {e}")
+    chat_service = None
 
 @app.on_event("startup")
 async def startup_event():
