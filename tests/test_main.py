@@ -6,6 +6,13 @@ from app.main import app
 # クライアントの作成
 client = TestClient(app)
 
+class MockNode:
+    def __init__(self):
+        self.metadata = {"file_name": "test.pdf"}
+    
+    def get_content(self):
+        return "テスト用ドキュメントの中身がここに入ります..."
+
 def test_read_root():
     """ヘルスチェック的なテスト"""
     # エンドポイントがないので、404になるのが正常か、
@@ -21,12 +28,13 @@ def test_chat_endpoint(mock_chat_service):
     mock_response = MagicMock()
     mock_response.__str__.return_value = "これはテストの回答です。"
     # ソースノードの情報も偽装
-    mock_node = MagicMock()
-    mock_node.metadata = {"file_name": "test.pdf"}
-    mock_node.score = 0.95
-    mock_node.get_content.return_value = "テスト用ドキュメントの中身..."
+    fake_node = MockNode()
     
-    mock_response.source_nodes = [MagicMock(node=mock_node, score=0.95)]
+    mock_node_with_score = MagicMock()
+    mock_node_with_score.node = fake_node
+    mock_node_with_score.score = 0.95
+    
+    mock_response.source_nodes = [mock_node_with_score]
     
     # askメソッドが呼ばれたら、この偽装レスポンスを返すように設定
     mock_chat_service.ask.return_value = mock_response
@@ -41,3 +49,4 @@ def test_chat_endpoint(mock_chat_service):
     assert data["answer"] == "これはテストの回答です。"
     assert len(data["sources"]) == 1
     assert data["sources"][0]["file_name"] == "test.pdf"
+    assert "テスト用ドキュメント" in data["sources"][0]["text_preview"]
