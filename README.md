@@ -1,6 +1,7 @@
 # Grad-Exam-RAG: ローカル完結型 院試対策AIアシスタント
 
 ![CI Pipeline](https://github.com/meister20h38/grad-exam-rag/actions/workflows/ci.yml/badge.svg)
+
 大学院入試（数学・情報系）の過去問PDFを学習し、数式を含む高度な質問に回答するRAG（Retrieval-Augmented Generation）アプリケーション。
 外部API（OpenAI等）を使用せず、**RTX 3060 (12GB)** 搭載のローカルPC上で、OCRから推論まで全てのパイプラインを完結させています。
 
