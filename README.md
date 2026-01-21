@@ -1,5 +1,6 @@
 # Grad-Exam-RAG: ローカル完結型 院試対策AIアシスタント
 
+![CI Pipeline](https://github.com/meister20h38/grad-exam-rag/actions/workflows/ci.yml/badge.svg)
 大学院入試（数学・情報系）の過去問PDFを学習し、数式を含む高度な質問に回答するRAG（Retrieval-Augmented Generation）アプリケーション。
 外部API（OpenAI等）を使用せず、**RTX 3060 (12GB)** 搭載のローカルPC上で、OCRから推論まで全てのパイプラインを完結させています。
 
@@ -60,18 +61,13 @@ graph LR
 
 ## 🛠 Tech Stack
 * **Language**: Python 3.10
-
 * **LLM**: Ollama (Model: `qwen2.5:14b`)
-
 * **Embedding**: `intfloat/multilingual-e5-large`
-
 * **Vector DB**: Qdrant (Docker)
-
 * **OCR**: Marker (PyTorch)
-
 * **Backend**: FastAPI
-
 * **Frontend**: Streamlit
+* **CI/CD**: GitHub Actions (Lint/Test Automation)
 
 ## 🔥 Technical Challenges & Solutions
 
