@@ -26,7 +26,7 @@
 
 実際に大学院入試の線形代数の問題について質問している様子です。
 数式を含む専門的な回答が日本語で生成され、直感的なチャットUIで確認できます。
-また、ここでは著作権の観点から最終版ではないですが、最終版では、回答の根拠（Source）を表示する際、PDFの該当ページの冒頭を返すことで、ユーザーが『AIの嘘（ハルシネーション）』を即座に検証できるようにしています。
+最終版では、回答の根拠（Source）を表示する際、PDFの該当ページの冒頭を返すことで、ユーザーが『AIの嘘（ハルシネーション）』を即座に検証できるようにしています。
 
 ![Demo App](./images/demo_chat.png)
 
@@ -92,6 +92,14 @@ graph LR
 - **🟢 解決策**: FastAPIの `async def` でCPUバウンドな重い処理（LLM推論）を実行していたことが原因。`def` (同期関数) に変更することで、FastAPIのワーカースレッドプールで処理させ、ノンブロッキング化を実現。
 
 単に『動く』だけでなく、 **サーバーの多重リクエストに対する応答性（スケーラビリティ）** を考慮して、イベントループをブロックしない実装にこだわりました。
+
+## 🔧 OCR Quality Improvement (Before vs After)
+
+一般的なOCRでは崩れてしまう数式やレイアウトを、ローカルLLMのパイプラインで修復しています。
+
+![OCR Correction Demo](./images/ocr_diff_demo_1.png)
+![OCR Correction Demo](./images/ocr_diff_demo_2.png)
+*Left: Raw OCR Output (Noisy) / Right: Structured Markdown by LLM*
 
 ## 📊 Evaluation (精度評価)
 
