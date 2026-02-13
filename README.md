@@ -33,21 +33,52 @@
 ## 🏗 Architecture
 
 ```mermaid
-graph LR
-    subgraph Data Pipeline
-        PDF[過去問PDF] -->|OCR/Marker| RawMD[Raw Markdown]
-        RawMD -->|"Cleaning (LLM)"| CleanMD["Structured Markdown"]
-        CleanMD -->|Chunking| Nodes
-        Nodes -->|"Embedding (GPU/CPU)"| VectorDB[(Qdrant)]
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#e6f3ff', 'edgeLabelBackground':'#ffffff', 'tertiaryColor': '#f4f4f4'}}}%%
+graph TD
+    %% --- Inputs ---
+    User(["👤 User (質問者)"])
+    PDFs[/"📂 Raw PDFs"/]
+
+    %% --- System Container ---
+    subgraph "💻 Local Workstation (RTX 3060 / 12GB)"
+        
+        %% Frontend
+        UI["🖥️ Streamlit UI"]
+
+        %% Ingestion Flow (Left Side logic in TD)
+        subgraph "1. Ingestion Pipeline"
+            OCR["🔍 Marker OCR"]
+            Cleaner["✨ LLM Cleaner<br/>(Format修復)"]
+        end
+
+        %% Core Logic
+        RAG{"⚡ FastAPI<br/>Orchestrator"}
+
+        %% Infrastructure (Bottom)
+        subgraph "Models & DB"
+            Embed["🧠 Embedding<br/>(CPU Offload)"]
+            Qdrant[("🗄️ Qdrant DB")]
+            LLM["🤖 Gen LLM<br/>(Qwen 2.5)"]
+        end
     end
 
-    subgraph Application
-        User -->|Chat| UI[Streamlit Frontend]
-        UI -->|API Req| API[FastAPI Backend]
-        API -->|Retrieve| VectorDB
-        VectorDB -->|Context| API
-        API -->|"Generate (GPU)"| LLM["Ollama / Qwen 2.5"]
-    end
+    %% --- Connections ---
+    User <--> UI
+    UI <--> RAG
+    
+    PDFs --> OCR
+    OCR --> Cleaner
+    Cleaner --> Embed
+    Embed --> Qdrant
+
+    RAG --> Embed
+    Embed -.-> Qdrant
+    Qdrant -.-> RAG
+    RAG <--> LLM
+
+    %% --- Styling ---
+    classDef unique fill:#fff5e6,stroke:#ff9900,stroke-width:2px,color:#000;
+    class Cleaner unique;
 ```
 
 ## 🚀 Key Features
