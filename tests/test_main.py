@@ -18,19 +18,18 @@ def test_chat_endpoint(mock_chat_service):
     mock_response.__str__.return_value = "これはテストの回答です。"
 
     # 2. ソースノード(参照元)のMockを作成
-    # ここが修正ポイント: どんなアクセスが来てもいいように両方設定する
     mock_node_item = MagicMock()
     
-    # テスト用のデータ
+    # テスト用の本物のデータ（辞書と文字列）を用意
     test_metadata = {"file_name": "test.pdf"}
     test_content = "テスト用ドキュメントの中身..."
     
-    # ケースA: アプリが node.metadata にアクセスする場合
+    # アプリ側が node.metadata にアクセスしても、node.node.metadata にアクセスしても
+    # 大丈夫なように、両方に本物のデータをセットしておく
     mock_node_item.metadata = test_metadata
     mock_node_item.get_content.return_value = test_content
     mock_node_item.score = 0.95
     
-    # ケースB: アプリが node.node.metadata にアクセスする場合（LlamaIndexの仕様によって異なるため念のため）
     mock_node_item.node.metadata = test_metadata
     mock_node_item.node.get_content.return_value = test_content
 
@@ -52,4 +51,3 @@ def test_chat_endpoint(mock_chat_service):
     # ソース情報の検証
     assert len(data["sources"]) == 1
     assert data["sources"][0]["file_name"] == "test.pdf"
-    # Pydanticを通った後のデータなので安心
